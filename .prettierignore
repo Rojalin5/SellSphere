@@ -1,7 +1,4 @@
-# Ignore environment variables and configurations  
 .env  
 *.env  
 .env*  
-
-# Ignore dependencies  
-node_modules 
+/node_modules

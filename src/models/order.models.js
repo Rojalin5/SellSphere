@@ -32,15 +32,10 @@ const orderSchema = new mongoose.Schema(
       default: "Pending",
       required: true,
     },
-    transactionID: {
-      type: String,
-      default: null,
-    },
-    paymentStatus: {
-      type: String,
-      enum: ["Pending", "COD", "Paid", "Payment Failed"],
-      default: "Pending",
-      required: true,
+    payment:{
+      type:mongoose.Schema.Types.ObjectId,
+      ref:"Payement",
+      default:null
     },
   },
   { timestamps: true }

@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { generateUserName } from "../utils/userNameGenerator.js";
+import bcrypt from "bcrypt";
 const userSchema = new mongoose.Schema(
   {
     name: {
@@ -21,7 +22,7 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ["User", "Admin","SuperAdmin"],
+      enum: ["User", "Admin", "SuperAdmin"],
       default: "User",
     },
     address: [
@@ -53,4 +54,13 @@ userSchema.pre("save", async function (next) {
   this.username = await generateUserName(this.name);
   next();
 });
+
+userSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
+  this.password = await bcrypt(this.password, 10);
+  next();
+});
+userSchema.methods.isPasswordCorrect = async function (password) {
+  return await bcrypt.compare(password, this.password);
+};
 export const User = mongoose.model("User", userSchema);

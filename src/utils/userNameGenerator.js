@@ -1,12 +1,12 @@
-import mongoose from "mongoose";
+import { User } from "../models/user.models.js";
 
 const generateUserName = async(name) =>{
-    const baseUserName = name.toLowercase().replace(/\s+/g,'')//remove spaces
+    const baseUserName = name.toLowerCase().replace(/\s+/g,'')//remove spaces
     .replace(/[^a-zA-Z0-9]/g,'')
-    const uniqueUsername = baseUserName
+    let uniqueUsername = baseUserName
     let counter = 1
-while(await mongoose.model("User").exists({username:uniqueUsername})){
-    uniqueUsername = `$baseUsername+${counter}`
+while(await User.exists({username:uniqueUsername})){
+    uniqueUsername = `${baseUserName}${counter}`
     counter++
 }
     return uniqueUsername

@@ -20,6 +20,10 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    profilePicture:{
+      type:String,
+      default:"https://res.cloudinary.com/dfndsnvda/image/upload/v1743002788/profile_default_eapyvf.jpg"
+    },
     role: {
       type: String,
       enum: ["User", "Admin", "SuperAdmin"],
@@ -52,12 +56,9 @@ const userSchema = new mongoose.Schema(
 
 userSchema.pre("save", async function (next) {
   this.username = await generateUserName(this.name);
-  next();
-});
 
-userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
-  this.password = await bcrypt(this.password, 10);
+  this.password = await bcrypt.hash(this.password, 10);
   next();
 });
 userSchema.methods.isPasswordCorrect = async function (password) {

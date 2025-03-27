@@ -38,7 +38,7 @@ const userRegister = asyncHandler(async (req, res) => {
     name,
     email,
     password,
-    profilePicture: profilePicture?.url || "",
+    profilePicture: profilePicture?.url,
     role,
     address,
   });

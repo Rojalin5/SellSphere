@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { generateUserName } from "../utils/userNameGenerator.js";
+import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 const userSchema = new mongoose.Schema(
   {
@@ -19,11 +20,12 @@ const userSchema = new mongoose.Schema(
     password: {
       type: String,
       required: true,
-      select:false
+      select: false,
     },
-    profilePicture:{
-      type:String,
-      default:"https://res.cloudinary.com/dfndsnvda/image/upload/v1743002788/profile_default_eapyvf.jpg"
+    profilePicture: {
+      type: String,
+      default:
+        "https://res.cloudinary.com/dfndsnvda/image/upload/v1743002788/profile_default_eapyvf.jpg",
     },
     role: {
       type: String,
@@ -51,6 +53,9 @@ const userSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Product",
     },
+    refreshToken:{
+      type:String
+    }
   },
   { timestamps: true }
 );
@@ -65,4 +70,34 @@ userSchema.pre("save", async function (next) {
 userSchema.methods.isPasswordCorrect = async function (password) {
   return await bcrypt.compare(password, this.password);
 };
+
+
+userSchema.methods.generateAccessToken = async function () {
+  const token = jwt.sign(
+    {
+      _id: this._id,
+      name: this.name,
+      email: this.email,
+    },
+    process.env.ACCESS_TOKEN_SECRET,
+    {
+      expiresIn: process.env.ACCESS_TOKEN_EXPIRES,
+    }
+  );
+  return token;
+};
+
+userSchema.methods.generateRefreshToken = async function () {
+  return jwt.sign(
+    {
+      _id: this._id,
+    },
+
+    process.env.REFRESH_TOKEN_SECRET,
+    {
+      expiresIn: process.env.REFRESH_TOKEN_EXPIRES,
+    }
+  );
+};
+
 export const User = mongoose.model("User", userSchema);

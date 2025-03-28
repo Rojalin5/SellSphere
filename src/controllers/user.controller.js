@@ -46,13 +46,21 @@ const userRegister = asyncHandler(async (req, res) => {
   const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
     newUser._id
   );
-  const createdUser = await User.findById(newUser._id).select("-password -refreshToken");
+  const createdUser = await User.findById(newUser._id).select(
+    "-password -refreshToken"
+  );
   if (!createdUser) {
     throw new ApiError(500, "Something went wrong while registering the user");
   }
   return res
     .status(201)
-    .json(new ApiResponse(201,{User:createdUser,accessToken,refreshToken}, "User Registered Successfully"));
+    .json(
+      new ApiResponse(
+        201,
+        { User: createdUser, accessToken, refreshToken },
+        "User Registered Successfully"
+      )
+    );
 });
 
 const userLogin = asyncHandler(async (req, res) => {
@@ -89,4 +97,24 @@ const userLogin = asyncHandler(async (req, res) => {
     );
 });
 
-export { userRegister, userLogin };
+const userLogout = asyncHandler(async (req, res) => {
+  await User.findByIdAndUpdate(
+    req.user._id,
+    {
+      $set: {
+        refreshToken: undefined,
+      },
+    },
+    { new: true }
+  );
+  const option = {
+    httpOnly: true,
+    secure: true,
+  };
+  return res.status(200).cookie("accessToken",option).cookie("refreshToken",option).
+  json(
+    new ApiResponse(200,{},"User Logged Out Successfully")
+  )
+});
+
+export { userRegister, userLogin, userLogout };

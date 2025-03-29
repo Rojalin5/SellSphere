@@ -1,7 +1,11 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
-import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import {
+  uploadOnCloudinary,
+  extractpublicIDFromUrl,
+  deleteFileFromCloudinary,
+} from "../utils/cloudinary.js";
 import { User } from "../models/user.models.js";
 import { generateAccessAndRefreshToken } from "../utils/generateToken.js";
 
@@ -110,12 +114,91 @@ const userLogout = asyncHandler(async (req, res) => {
   const option = {
     httpOnly: true,
     secure: true,
-    expries: new Date(0)
+    expries: new Date(0),
   };
-  return res.status(200).cookie("accessToken","",option).cookie("refreshToken","",option).
-  json(
-    new ApiResponse(200,{},"User Logged Out Successfully")
-  )
+  return res
+    .status(200)
+    .cookie("accessToken", "", option)
+    .cookie("refreshToken", "", option)
+    .json(new ApiResponse(200, {}, "User Logged Out Successfully"));
 });
 
-export { userRegister, userLogin, userLogout };
+const userDetailUpdate = asyncHandler(async (req, res) => {
+  const userID = req.user._id;
+  const { name, email, password, role, address } = req.body;
+  if (!name && !email && !password && !role && !address) {
+    throw new ApiError(400, "Atleast one field is required to update");
+  }
+  const user = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: {
+        name,
+        email,
+        password,
+        role,
+        address,
+      },
+    },
+    { new: true }
+  ).select("-password");
+  if (!user) {
+    throw new ApiError(404, "User not found with this ID");
+  }
+  return res
+    .status(200)
+    .json(new ApiResponse(200, user, "User Details Updated Successfully"));
+});
+const userProfilePictureUpdate = asyncHandler(async (req, res) => {
+  const userID = req.user._id;
+  const user = await User.findById(userID);
+  if (!user) {
+    throw new ApiError(404, "User not found with this ID");
+  }
+  const profilePictureLocalPath = req.file?.path;
+  if (!profilePictureLocalPath) {
+    throw new ApiError(400, "Profile Picture is missing");
+  }
+  if (
+    user.profilePicture &&
+    user.profilePicture !== process.env.DEFAULT_PROFILE_PICTURE
+  ) {
+    const publicID = extractpublicIDFromUrl(user.profilePicture);
+    await deleteFileFromCloudinary(publicID);
+  }
+  let profilePicture = process.env.DEFAULT_PROFILE_PICTURE;
+  if (req.file) {
+    profilePicture = await uploadOnCloudinary(req.file.path);
+    if (!profilePicture) {
+      throw new ApiError(
+        500,
+        "Something went wrong while uploading Profile Picture"
+      );
+    }
+  }
+  user.profilePicture = profilePicture;
+  await user.save();
+  res
+    .status(200)
+    .json(new ApiResponse(200, user, "Profile Picture Updated Successfully"));
+});
+
+const userProfileDelete = asyncHandler(async (req, res) => {
+  const userID = req.user._id;
+  const user = await User.findByIdAndDelete(userID);
+  if (!user) {
+    throw new ApiError(404, "User not found with this ID");
+  }
+  return res
+    .status(200)
+    .clearCookie("accessToken")
+    .clearCookie("refreshToken")
+    .json(new ApiResponse(200, {}, "User Deleted Successfully"));
+});
+export {
+  userRegister,
+  userLogin,
+  userLogout,
+  userDetailUpdate,
+  userProfileDelete,
+};

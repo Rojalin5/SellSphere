@@ -20,8 +20,27 @@ const uploadOnCloudinary = async (localFilePath) => {
     fs.unlinkSync(localFilePath);
     return response;
   } catch (error) {
-    fs.unlink(localFilePath);
+    fs.unlinkSync(localFilePath);
     return null;
   }
 };
-export { uploadOnCloudinary };
+
+const extractpublicIDFromUrl = (url) => {
+  const urlParts = url.split("/");
+  const fileName = urlParts[urlParts.length - 1].split(".")[0];
+  return `${urlParts[urlParts.length - 2]}/${fileName}`;
+};
+
+const deleteFileFromCloudinary = async (publicID) => {
+  try {
+    const result = await cloudinary.uploader.destroy(publicID);
+    if (result.result == "not found") {
+      console.log("File not found in cloudinary");
+    } else {
+      console.log("File has been Deleted!", result);
+    }
+  } catch (error) {
+    console.log("Error while deleting file from cloudinary", error);
+  }
+};
+export { uploadOnCloudinary, extractpublicIDFromUrl, deleteFileFromCloudinary };

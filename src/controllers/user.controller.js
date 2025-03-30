@@ -199,6 +199,7 @@ export {
   userRegister,
   userLogin,
   userLogout,
+  userProfilePictureUpdate,
   userDetailUpdate,
   userProfileDelete,
 };

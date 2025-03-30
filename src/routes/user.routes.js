@@ -5,6 +5,9 @@ import {
   userLogin,
   userRegister,
   userLogout,
+  userDetailUpdate,
+  userProfilePictureUpdate,
+  userProfileDelete
 } from "../controllers/user.controller.js";
 
 const router = Router();
@@ -20,5 +23,8 @@ router.route("/register").post(
 );
 router.route("/login").post(userLogin);
 router.route("/logout").post(verifyJWT, userLogout);
+router.route("/details-update").patch(verifyJWT,userDetailUpdate)
+router.route("/profile-picture-update").patch(verifyJWT,upload.single("profilePicture"),userProfilePictureUpdate)
+router.route("/delete-profile").delete(verifyJWT,userProfileDelete)
 
 export default router;

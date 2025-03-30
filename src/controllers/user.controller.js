@@ -125,12 +125,12 @@ const userLogout = asyncHandler(async (req, res) => {
 
 const userDetailUpdate = asyncHandler(async (req, res) => {
   const userID = req.user._id;
-  const { name, email, password, role, address } = req.body;
-  if (!name && !email && !password && !role && !address) {
+  const { name, email, role, address } = req.body;
+  if (!name && !email && !role && !address) {
     throw new ApiError(400, "Atleast one field is required to update");
   }
   const user = await User.findByIdAndUpdate(
-    req.user?._id,
+    userID,
     {
       $set: {
         name,
@@ -182,7 +182,39 @@ const userProfilePictureUpdate = asyncHandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, user, "Profile Picture Updated Successfully"));
 });
-
+const currentUserDetail = asyncHandler(async (req, res) => {
+  return res
+    .status(200)
+    .json(new ApiResponse(200, req.user, "User detail Fetched Successfully"));
+});
+const userPasswordChange = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id).select("+password");
+  if (!user) {
+    throw new ApiError(404, "User not found with this ID");
+  }
+  const { oldPassword, newPassword, confirmPassword } = req.body;
+  const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
+  if (!isPasswordCorrect) {
+    throw new ApiError(401, "Invalid Current Password");
+  }
+  if (!oldPassword || !newPassword || !confirmPassword) {
+    throw new ApiError(400, "All fields are Required!");
+  }
+  if (oldPassword == newPassword) {
+    throw new ApiError(
+      400,
+      "New Password Should be diffenrent from Your previous Password!"
+    );
+  }
+  if (newPassword !== confirmPassword) {
+    throw new ApiError(400, "New Password and Confirm Password Must be same!");
+  }
+  user.password = newPassword;
+  await user.save({ validateBeforeSave: false });
+  res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Password Changes Successfully!"));
+});
 const userProfileDelete = asyncHandler(async (req, res) => {
   const userID = req.user._id;
   const user = await User.findByIdAndDelete(userID);
@@ -201,5 +233,7 @@ export {
   userLogout,
   userProfilePictureUpdate,
   userDetailUpdate,
+  currentUserDetail,
+  userPasswordChange,
   userProfileDelete,
 };

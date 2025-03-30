@@ -2,12 +2,14 @@ import { Router } from "express";
 import { upload } from "../middlewares/multer.middlewares.js";
 import { verifyJWT } from "../middlewares/Authentication.js";
 import {
-  userLogin,
   userRegister,
+  userLogin,
   userLogout,
-  userDetailUpdate,
   userProfilePictureUpdate,
-  userProfileDelete
+  userDetailUpdate,
+  currentUserDetail,
+  userPasswordChange,
+  userProfileDelete,
 } from "../controllers/user.controller.js";
 
 const router = Router();
@@ -25,6 +27,8 @@ router.route("/login").post(userLogin);
 router.route("/logout").post(verifyJWT, userLogout);
 router.route("/details-update").patch(verifyJWT,userDetailUpdate)
 router.route("/profile-picture-update").patch(verifyJWT,upload.single("profilePicture"),userProfilePictureUpdate)
+router.route("/current-user").get(verifyJWT,currentUserDetail)
+router.route("/password-change").patch(verifyJWT,userPasswordChange)
 router.route("/delete-profile").delete(verifyJWT,userProfileDelete)
 
 export default router;

@@ -136,7 +136,6 @@ const userDetailUpdate = asyncHandler(async (req, res) => {
       $set: {
         name,
         email,
-        password,
         role,
         address,
       },
@@ -150,38 +149,37 @@ const userDetailUpdate = asyncHandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, user, "User Details Updated Successfully"));
 });
+
 const userProfilePictureUpdate = asyncHandler(async (req, res) => {
-  const userID = req.user._id;
-  const user = await User.findById(userID);
-  if (!user) {
-    throw new ApiError(404, "User not found with this ID");
-  }
-  const profilePictureLocalPath = req.file?.path;
-  if (!profilePictureLocalPath) {
-    throw new ApiError(400, "Profile Picture is missing");
-  }
-  if (
-    user.profilePicture &&
-    user.profilePicture !== process.env.DEFAULT_PROFILE_PICTURE
-  ) {
-    const publicID = extractpublicIDFromUrl(user.profilePicture);
-    await deleteFileFromCloudinary(publicID);
-  }
-  let profilePicture = process.env.DEFAULT_PROFILE_PICTURE;
-  if (req.file) {
-    profilePicture = await uploadOnCloudinary(req.file.path);
-    if (!profilePicture) {
-      throw new ApiError(
-        500,
-        "Something went wrong while uploading Profile Picture"
-      );
-    }
-  }
-  user.profilePicture = profilePicture;
-  await user.save();
-  res
-    .status(200)
-    .json(new ApiResponse(200, user, "Profile Picture Updated Successfully"));
+const profilePictureLocalPath = req.file?.path
+if(!profilePictureLocalPath){
+    throw new ApiError(400, "Profile Picture is required for updating profile.")
+}
+const user = await User.findById(req.user?._id);
+if (!user) {
+    throw new ApiError(404, "User not found.");
+}
+if(user.profilePicture && user.profilePicture !== process.env.DEFAULT_PROFILE_PICTURE){
+  const publicID = extractpublicIDFromUrl(user.profilePicture)
+ if(publicID){
+  await deleteFileFromCloudinary(publicID)
+ }
+}
+const profilePicture = await uploadOnCloudinary(profilePictureLocalPath)
+if(!profilePicture.url){
+    throw new ApiError(400, "Error while uploading profile picture!")
+}
+const updatedUser = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+        $set:{
+            profilePicture:profilePicture.url
+        }
+    },
+    {new:true}).select("-password")
+return res.status(200).json(
+    new ApiResponse(200,updatedUser,"Profile Picture Updated Successfully")
+)
 });
 const currentUserDetail = asyncHandler(async (req, res) => {
   return res
@@ -272,8 +270,9 @@ export {
   userRegister,
   userLogin,
   userLogout,
-  userProfilePictureUpdate,
   userDetailUpdate,
+  userProfilePictureUpdate,
+  userProfilePictureDelete,
   currentUserDetail,
   userPasswordChange,
   refreshAccessToken,

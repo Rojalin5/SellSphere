@@ -27,21 +27,44 @@ const uploadOnCloudinary = async (localFilePath) => {
 };
 
 const extractpublicIDFromUrl = (url) => {
-  const urlParts = url.split("/");
-  const fileName = urlParts[urlParts.length - 1].split(".")[0];
-  return `${urlParts[urlParts.length - 2]}/${fileName}`;
+  try {
+    console.log("🔍 Extracting Public ID from URL:", url);
+
+    const urlParts = url.split("/");
+    const fileNameWithExtension = urlParts.pop();
+    const fileName = fileNameWithExtension.split(".")[0];
+
+
+    const publicID = `${fileName}`;
+
+    console.log("Corrected Public ID:", publicID);
+    return publicID;
+  } catch (error) {
+    console.log("Error Extracting Public ID:", error);
+    return null;
+  }
 };
 
 const deleteFileFromCloudinary = async (publicID) => {
   try {
-    const result = await cloudinary.uploader.destroy(publicID);
-    if (result.result == "not found") {
-      console.log("File not found in cloudinary");
+    if (!publicID) {
+      console.log("Invalid Public ID:", publicID);
+      return;
+    }
+
+    console.log("Deleting Public ID:", publicID);
+
+    // Delete the file with invalidation to ensure it's removed
+    const result = await cloudinary.uploader.destroy(publicID, { invalidate: true });
+
+    if (result.result === "not found") {
+      console.log("File not found in Cloudinary. Double-check the public ID.");
     } else {
-      console.log("File has been Deleted!", result);
+      console.log("File successfully deleted from Cloudinary!", result);
     }
   } catch (error) {
-    console.log("Error while deleting file from cloudinary", error);
+    console.error("Error while deleting file from Cloudinary:", error);
   }
 };
+
 export { uploadOnCloudinary, extractpublicIDFromUrl, deleteFileFromCloudinary };

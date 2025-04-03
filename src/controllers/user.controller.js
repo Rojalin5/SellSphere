@@ -151,35 +151,74 @@ const userDetailUpdate = asyncHandler(async (req, res) => {
 });
 
 const userProfilePictureUpdate = asyncHandler(async (req, res) => {
-const profilePictureLocalPath = req.file?.path
-if(!profilePictureLocalPath){
-    throw new ApiError(400, "Profile Picture is required for updating profile.")
-}
-const user = await User.findById(req.user?._id);
-if (!user) {
+  const profilePictureLocalPath = req.file?.path;
+  if (!profilePictureLocalPath) {
+    throw new ApiError(
+      400,
+      "Profile Picture is required for updating profile."
+    );
+  }
+  const user = await User.findById(req.user?._id);
+  if (!user) {
     throw new ApiError(404, "User not found.");
-}
-if(user.profilePicture && user.profilePicture !== process.env.DEFAULT_PROFILE_PICTURE){
-  const publicID = extractpublicIDFromUrl(user.profilePicture)
- if(publicID){
-  await deleteFileFromCloudinary(publicID)
- }
-}
-const profilePicture = await uploadOnCloudinary(profilePictureLocalPath)
-if(!profilePicture.url){
-    throw new ApiError(400, "Error while uploading profile picture!")
-}
-const updatedUser = await User.findByIdAndUpdate(
+  }
+  if (
+    user.profilePicture &&
+    user.profilePicture !== process.env.DEFAULT_PROFILE_PICTURE
+  ) {
+    const publicID = extractpublicIDFromUrl(user.profilePicture);
+    if (publicID) {
+      await deleteFileFromCloudinary(publicID);
+    }
+  }
+  const profilePicture = await uploadOnCloudinary(profilePictureLocalPath);
+  if (!profilePicture.url) {
+    throw new ApiError(400, "Error while uploading profile picture!");
+  }
+  const updatedUser = await User.findByIdAndUpdate(
     req.user?._id,
     {
-        $set:{
-            profilePicture:profilePicture.url
-        }
+      $set: {
+        profilePicture: profilePicture.url,
+      },
     },
-    {new:true}).select("-password")
-return res.status(200).json(
-    new ApiResponse(200,updatedUser,"Profile Picture Updated Successfully")
-)
+    { new: true }
+  ).select("-password");
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, updatedUser, "Profile Picture Updated Successfully")
+    );
+});
+const userProfilePictureDelete = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user?._id);
+  if (!user) {
+    throw new ApiError(404, "User Not Found!");
+  }
+  if (
+    user.profilePicture &&
+    user.profilePicture !== process.env.DEFAULT_PROFILE_PICTURE
+  ) {
+    const publicID = extractpublicIDFromUrl(user.profilePicture);
+    console.log("Public ID:", publicID);
+    if (publicID) {
+      await deleteFileFromCloudinary(publicID);
+    }
+  }
+  const updatedUser = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: {
+        profilePicture: process.env.DEFAULT_PROFILE_PICTURE,
+      },
+    },
+    { new: true }
+  ).select("-password");
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, updatedUser, "Profile Picture Deleted Successfully")
+    );
 });
 const currentUserDetail = asyncHandler(async (req, res) => {
   return res

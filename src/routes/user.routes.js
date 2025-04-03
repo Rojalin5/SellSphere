@@ -7,6 +7,7 @@ import {
   userLogout,
   userDetailUpdate,
   userProfilePictureUpdate,
+  userProfilePictureDelete,
   currentUserDetail,
   userPasswordChange,
   userProfileDelete,
@@ -28,6 +29,7 @@ router.route("/login").post(userLogin);
 router.route("/logout").post(verifyJWT, userLogout);
 router.route("/details-update").patch(verifyJWT,userDetailUpdate)
 router.route("/profile-picture-update").patch(verifyJWT,upload.single("profilePicture"),userProfilePictureUpdate)
+router.route("/delete-profile-picture").delete(verifyJWT,userProfilePictureDelete)
 router.route("/current-user").get(verifyJWT,currentUserDetail)
 router.route("/password-change").patch(verifyJWT,userPasswordChange)
 router.route("/refresh-token").post(verifyJWT,refreshAccessToken)

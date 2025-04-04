@@ -22,11 +22,16 @@ const productSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
-    tags:[String],
-    images:[{type:String}],
-    varient:[{size:String,color:String,price:Number}]
+    tags: [String],
+    images: [{ type: String }],
+    varient: [{ size: String, color: String, price: Number }],
+    owner: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
   },
   { timestamps: true }
 );
 
-export const Product = mongoose.model("Product",productSchema)
+export const Product = mongoose.model("Product", productSchema);

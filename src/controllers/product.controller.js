@@ -92,7 +92,7 @@ const getAllProducts = asyncHandler(async (req, res) => {
 });
 
 const getProductById = asyncHandler(async (req, res) => {
-  const productID = req.param._id;
+  const productID = req.params._id;
   if (!productID) {
     throw new ApiError(400, "ProductID is Required!");
   }

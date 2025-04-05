@@ -56,3 +56,55 @@ const createProduct = asyncHandler(async (req, res) => {
     .status(201)
     .json(new ApiResponse(201, product, "Product Added Successfully!"));
 });
+
+const getAllProducts = asyncHandler(async (req, res) => {
+  const { page = 1, limit = 10, query, sortType, sortBy, AdminID } = req.query;
+  const pageNumber = parseInt(page);
+  const limitNumber = parseInt(limit);
+  const skip = (pageNumber - 1) * limitNumber;
+
+  const filter = {};
+
+  if (query) {
+    filter.name = { $regex: query, $options: "i" };
+  }
+  if (AdminID) {
+    filter.owner = AdminID;
+  }
+  const sortOrder = sortType === "asc" ? 1 : -1;
+  const sortOption = { [sortBy]: sortOrder };
+
+  const allProducts = await Product.find(filter)
+    .sort(sortOption)
+    .skip(skip)
+    .limit(limitNumber);
+
+  const totalProduct = await Product.countDocuments(filter);
+  const totalPages = Math.ceil(TotalProducts / limitNumber);
+
+  res.status(200).json(
+    new ApiResponse(200, allProducts, "All Products fetched successfully", {
+      Page: pageNumber,
+      TotalProducts: totalProduct,
+      TotalPages: totalPages,
+    })
+  );
+});
+
+const getProductById = asyncHandler(async (req, res) => {
+  const productID = req.param._id;
+  if (!productID) {
+    throw new ApiError(400, "ProductID is Required!");
+  }
+  const product = await Product.findById(productID).populate(
+    "owner",
+    "-password -refreshToken"
+  );
+  if (!product) {
+    throw new ApiError(404, "Product not found!");
+  }
+  res.status(200).json(
+    new ApiResponse(200,product,"Product fetched successfully.")
+  )
+});
+export { createProduct, getAllProducts,getProductById };

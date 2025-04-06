@@ -1,11 +1,8 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
-import { User } from "../models/user.models.js";
 import { Product } from "../models/product.models.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
-import { json } from "express";
-
 const createProduct = asyncHandler(async (req, res) => {
   const { name, description, price, stock, category, varient } = req.body;
   if (!name || !description || !price || !stock || !category || !varient) {
@@ -110,4 +107,32 @@ const getProductById = asyncHandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, product, "Product fetched successfully."));
 });
-export { createProduct, getAllProducts, getProductById };
+
+const updateProduct = asyncHandler(async (req, res) => {
+  const productID = req.params.id;
+  const { name, description, price, stock, category, varient } = req.body;
+  if (!name && !description && !price && !stock && !category && !varient) {
+    throw new ApiError(400, "Atleast one field is required to update");
+  }
+  const product = await Product.findByIdAndUpdate(
+    productID,
+    {
+      $set: {
+        name,
+        description,
+        price,
+        stock,
+        category,
+        varient,
+      },
+    },
+    { new: true }
+  );
+  if (!product) {
+    throw new ApiError(404, "Product not found with this ID!");
+  }
+  return res
+    .status(200)
+    .json(new ApiResponse(200, product, "Product updated successfully!"));
+});
+export { createProduct, getAllProducts, getProductById, updateProduct };

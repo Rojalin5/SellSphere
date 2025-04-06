@@ -4,18 +4,21 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { User } from "../models/user.models.js";
 import { Product } from "../models/product.models.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import { json } from "express";
 
 const createProduct = asyncHandler(async (req, res) => {
   const { name, description, price, stock, category, varient } = req.body;
   if (!name || !description || !price || !stock || !category || !varient) {
     throw new ApiError(400, "All Fields Are Required!");
   }
-  if (req.user.role !== "Admin") {
-    throw new ApiError(401, "You are not authorized to create a product!");
+  let parsedVarient = [];
+  try {
+    parsedVarient = JSON.parse(req.body.varient);
+  } catch (error) {
+    return next(new ErrorHandler(400, "Invalid variant format. Must be JSON."));
   }
-  const exsitingProduct = await Product.findOne({
-    name: { $regex: new RegExp("^${name}$", "i") },
-  });
+
+  const exsitingProduct = await Product.findOne({ name });
   if (exsitingProduct) {
     throw new ApiError(400, "Product with this name already exists.");
   }
@@ -48,7 +51,7 @@ const createProduct = asyncHandler(async (req, res) => {
     stock,
     category,
     tag: productTags,
-    varient,
+    varient: parsedVarient,
     images: productPicture,
     owner: req.user._id,
   });
@@ -80,7 +83,7 @@ const getAllProducts = asyncHandler(async (req, res) => {
     .limit(limitNumber);
 
   const totalProduct = await Product.countDocuments(filter);
-  const totalPages = Math.ceil(TotalProducts / limitNumber);
+  const totalPages = Math.ceil(totalProduct / limitNumber);
 
   res.status(200).json(
     new ApiResponse(200, allProducts, "All Products fetched successfully", {
@@ -92,7 +95,7 @@ const getAllProducts = asyncHandler(async (req, res) => {
 });
 
 const getProductById = asyncHandler(async (req, res) => {
-  const productID = req.params._id;
+  const productID = req.params.id;
   if (!productID) {
     throw new ApiError(400, "ProductID is Required!");
   }
@@ -103,8 +106,8 @@ const getProductById = asyncHandler(async (req, res) => {
   if (!product) {
     throw new ApiError(404, "Product not found!");
   }
-  res.status(200).json(
-    new ApiResponse(200,product,"Product fetched successfully.")
-  )
+  res
+    .status(200)
+    .json(new ApiResponse(200, product, "Product fetched successfully."));
 });
-export { createProduct, getAllProducts,getProductById };
+export { createProduct, getAllProducts, getProductById };

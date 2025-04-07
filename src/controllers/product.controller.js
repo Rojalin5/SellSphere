@@ -2,7 +2,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { Product } from "../models/product.models.js";
-import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import { deleteFileFromCloudinary, extractpublicIDFromUrl, uploadOnCloudinary } from "../utils/cloudinary.js";
 const createProduct = asyncHandler(async (req, res) => {
   const { name, description, price, stock, category, varient } = req.body;
   if (!name || !description || !price || !stock || !category || !varient) {
@@ -71,6 +71,7 @@ const getAllProducts = asyncHandler(async (req, res) => {
   if (AdminID) {
     filter.owner = AdminID;
   }
+  console.log(req.query);
   const sortOrder = sortType === "asc" ? 1 : -1;
   const sortOption = { [sortBy]: sortOrder };
 
@@ -135,4 +136,96 @@ const updateProduct = asyncHandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, product, "Product updated successfully!"));
 });
-export { createProduct, getAllProducts, getProductById, updateProduct };
+
+const uploadProductImage = asyncHandler(async (req, res) => {
+  const productID = req.params.id;
+  if (!productID) {
+    throw new ApiError(400, "ProductID is Required!");
+  }
+  const product = await Product.findById(productID);
+  if (!product) {
+    throw new ApiError(404, "Product Not Found With This ID!");
+  }
+  if (
+    !req.files ||
+    req.file.productImages ||
+    req.file.productImages.length === 0
+  ) {
+    throw new ApiError(400, "No Product Image is Found For Upload!");
+  }
+  const newImageURL = [];
+
+  for (const file of req.files.productImages) {
+    const uploaded = await uploadOnCloudinary(file.path);
+    if (uploaded?.url) {
+      newImageURL.push(uploaded.url);
+    }
+  }
+  product.images.push(...newImageURL);
+  await product.save();
+
+  res
+    .status(200)
+    .json(
+      new ApiResponse(200, product, "Product Image Uploaded Successfully!")
+    );
+});
+const updateProductImage = asyncHandler(async (req, res) => {
+  const productID = req.params.id;
+  const retainedImages = req.body;
+  if (!productID) {
+    throw new ApiError(400, "ProductID is Required!");
+  }
+  const product = await Product.findById(productID)
+  if(!product){
+    throw new ApiError(404, "Product Not Found With This ID!");
+  }
+  //upload images(if requested)
+  const newImageURL = []
+  if(req.files && req.files.productImages && req.files.productImages.length>0){
+for(const file of req.files.productImages){
+    const uploaded = await uploadOnCloudinary(file.path)
+    if(uploaded?.url){
+        newImageURL.push(uploaded.url)
+    }
+}
+  }
+//Delete Images(if requested)
+const imageToDelete = product.images.filter(
+    (url) => !(retainedImages || []).includes(url)
+)
+for(const url of imageToDelete){
+    const publicID = extractpublicIDFromUrl(url)
+    if(publicID){
+        await deleteFileFromCloudinary(publicID)
+    }
+}
+//final list
+product.images = [...[retainedImages || [],...newImageURL]]
+  await product.save()
+
+  res.status(200).json(
+    new ApiResponse(200,product,"Product Images Updated Successfully!")
+  )
+});
+
+const deleteProduct = asyncHandler(async (req, res) => {
+  const productID = req.params.id;
+  if (!productID) {
+    throw new ApiError(400, "ProductID is Required!");
+  }
+  const product = await Product.findByIdAndDelete(productID);
+  if (!product) {
+    throw new ApiError(404, "Product Not Found With This ID!");
+  }
+  res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Product Deleted Successfully!"));
+});
+export {
+  createProduct,
+  getAllProducts,
+  getProductById,
+  updateProduct,
+  deleteProduct,
+};

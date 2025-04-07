@@ -259,4 +259,7 @@ export {
   getProductById,
   updateProduct,
   deleteProduct,
+  uploadProductImage,
+  updateProductImage,
+  deleteProductImage
 };

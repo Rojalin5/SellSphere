@@ -7,7 +7,10 @@ import {
   getAllProducts,
   getProductById,
   updateProduct,
-  deleteProduct
+  deleteProduct,
+  uploadProductImage,
+  updateProductImage,
+  deleteProductImage,
 } from "../controllers/product.controller.js";
 
 const router = Router();
@@ -31,7 +34,16 @@ router
 router
   .route("/update-product/:id")
   .patch(verifyJWT, authorizedRole("Admin"), updateProduct);
-router.
-route("/delete-product/:id").delete(verifyJWT,authorizedRole("Admin"),deleteProduct)
-
+router
+  .route("/delete-product/:id")
+  .delete(verifyJWT, authorizedRole("Admin"), deleteProduct);
+  router
+  .route("/upload-product_img/:id")
+  .patch(verifyJWT, authorizedRole("Admin"), uploadProductImage);
+  router
+  .route("/update-product_img/:id")
+  .patch(verifyJWT, authorizedRole("Admin"), updateProductImage); 
+  router
+  .route("/delete-product_img/:id")
+  .delete(verifyJWT, authorizedRole("Admin"), deleteProductImage);
 export default router;

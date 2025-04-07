@@ -2,7 +2,11 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { Product } from "../models/product.models.js";
-import { deleteFileFromCloudinary, extractpublicIDFromUrl, uploadOnCloudinary } from "../utils/cloudinary.js";
+import {
+  deleteFileFromCloudinary,
+  extractpublicIDFromUrl,
+  uploadOnCloudinary,
+} from "../utils/cloudinary.js";
 const createProduct = asyncHandler(async (req, res) => {
   const { name, description, price, stock, category, varient } = req.body;
   if (!name || !description || !price || !stock || !category || !varient) {
@@ -176,39 +180,66 @@ const updateProductImage = asyncHandler(async (req, res) => {
   if (!productID) {
     throw new ApiError(400, "ProductID is Required!");
   }
-  const product = await Product.findById(productID)
-  if(!product){
+  const product = await Product.findById(productID);
+  if (!product) {
     throw new ApiError(404, "Product Not Found With This ID!");
   }
   //upload images(if requested)
-  const newImageURL = []
-  if(req.files && req.files.productImages && req.files.productImages.length>0){
-for(const file of req.files.productImages){
-    const uploaded = await uploadOnCloudinary(file.path)
-    if(uploaded?.url){
-        newImageURL.push(uploaded.url)
+  const newImageURL = [];
+  if (
+    req.files &&
+    req.files.productImages &&
+    req.files.productImages.length > 0
+  ) {
+    for (const file of req.files.productImages) {
+      const uploaded = await uploadOnCloudinary(file.path);
+      if (uploaded?.url) {
+        newImageURL.push(uploaded.url);
+      }
     }
-}
   }
-//Delete Images(if requested)
-const imageToDelete = product.images.filter(
+  //Delete Images(if requested)
+  const imageToDelete = product.images.filter(
     (url) => !(retainedImages || []).includes(url)
-)
-for(const url of imageToDelete){
-    const publicID = extractpublicIDFromUrl(url)
-    if(publicID){
-        await deleteFileFromCloudinary(publicID)
+  );
+  for (const url of imageToDelete) {
+    const publicID = extractpublicIDFromUrl(url);
+    if (publicID) {
+      await deleteFileFromCloudinary(publicID);
     }
-}
-//final list
-product.images = [...[retainedImages || [],...newImageURL]]
-  await product.save()
+  }
+  //final list
+  product.images = [...[retainedImages || [], ...newImageURL]];
+  await product.save();
 
-  res.status(200).json(
-    new ApiResponse(200,product,"Product Images Updated Successfully!")
-  )
+  res
+    .status(200)
+    .json(
+      new ApiResponse(200, product, "Product Images Updated Successfully!")
+    );
 });
-
+const deleteProductImage = asyncHandler(async (req, res) => {
+  const productID = req.params.id;
+  if (!productID) {
+    throw new ApiError(400, "ProductID is Required!");
+  }
+  const product = await Product.findById(productID);
+  if (!product) {
+    throw new ApiError(404, "Product Not Found With This ID!");
+  }
+  const imageURL = req.body.imageURL;
+  if (!imageToDelete) {
+    throw new ApiError(400, "Image URL is Required For Deletion!");
+  }
+  const publicID = extractpublicIDFromUrl(imageToDelete);
+  if (publicID) {
+    await deleteFileFromCloudinary(publicID);
+  }
+  Product.images = product.images.filter((url) => url !== imageURL);
+  res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Product Image Deleted Sucessfully!"));
+});
 const deleteProduct = asyncHandler(async (req, res) => {
   const productID = req.params.id;
   if (!productID) {

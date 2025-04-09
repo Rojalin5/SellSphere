@@ -35,15 +35,22 @@ router
   .route("/update-product/:id")
   .patch(verifyJWT, authorizedRole("Admin"), updateProduct);
 router
-  .route("/delete-product/:id")
-  .delete(verifyJWT, authorizedRole("Admin"), deleteProduct);
-  router
   .route("/upload-product_img/:id")
-  .patch(verifyJWT, authorizedRole("Admin"), uploadProductImage);
-  router
+  .patch(
+    verifyJWT,
+    authorizedRole("Admin"),
+    upload.fields([{ name: "productImages", maxCount: 5 }]),
+    uploadProductImage
+  );
+router
   .route("/update-product_img/:id")
-  .patch(verifyJWT, authorizedRole("Admin"), updateProductImage); 
-  router
+  .patch(verifyJWT, authorizedRole("Admin"),upload.fields([
+    {name:"productImages",maxCount:5}
+  ]), updateProductImage);
+router
   .route("/delete-product_img/:id")
   .delete(verifyJWT, authorizedRole("Admin"), deleteProductImage);
+router
+  .route("/delete-product/:id")
+  .delete(verifyJWT, authorizedRole("Admin"), deleteProduct);
 export default router;

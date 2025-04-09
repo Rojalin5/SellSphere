@@ -24,7 +24,7 @@ const productSchema = new mongoose.Schema(
     },
     tags: [String],
     images: [{ type: String }],
-    varient: [{ size: String, color: String, price: Number }],
+    varient: [{ size: String, color: String}],
     owner: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

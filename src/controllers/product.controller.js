@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
@@ -75,7 +76,6 @@ const getAllProducts = asyncHandler(async (req, res) => {
   if (AdminID) {
     filter.owner = AdminID;
   }
-  console.log(req.query);
   const sortOrder = sortType === "asc" ? 1 : -1;
   const sortOption = { [sortBy]: sortOrder };
 
@@ -115,8 +115,19 @@ const getProductById = asyncHandler(async (req, res) => {
 
 const updateProduct = asyncHandler(async (req, res) => {
   const productID = req.params.id;
-  const { name, description, price, stock, category, varient } = req.body;
-  if (!name && !description && !price && !stock && !category && !varient) {
+  if (!mongoose.Types.ObjectId.isValid(productID)) {
+    throw new ApiError(400, "ProductID is not Valid!");
+  }
+  const { name, description, price, tags, stock, category, varient } = req.body;
+  if (
+    !name &&
+    !description &&
+    !price &&
+    !tags &&
+    !stock &&
+    !category &&
+    !varient
+  ) {
     throw new ApiError(400, "Atleast one field is required to update");
   }
   const product = await Product.findByIdAndUpdate(
@@ -127,6 +138,7 @@ const updateProduct = asyncHandler(async (req, res) => {
         description,
         price,
         stock,
+        tags,
         category,
         varient,
       },
@@ -152,8 +164,8 @@ const uploadProductImage = asyncHandler(async (req, res) => {
   }
   if (
     !req.files ||
-    req.file.productImages ||
-    req.file.productImages.length === 0
+    !req.files.productImages ||
+    req.files.productImages.length === 0
   ) {
     throw new ApiError(400, "No Product Image is Found For Upload!");
   }
@@ -176,7 +188,7 @@ const uploadProductImage = asyncHandler(async (req, res) => {
 });
 const updateProductImage = asyncHandler(async (req, res) => {
   const productID = req.params.id;
-  const retainedImages = req.body;
+  const retainedImages = JSON.parse(req.body.retainedImages || "[]");
   if (!productID) {
     throw new ApiError(400, "ProductID is Required!");
   }
@@ -202,14 +214,19 @@ const updateProductImage = asyncHandler(async (req, res) => {
   const imageToDelete = product.images.filter(
     (url) => !(retainedImages || []).includes(url)
   );
-  for (const url of imageToDelete) {
+    for (const url of imageToDelete) {
     const publicID = extractpublicIDFromUrl(url);
     if (publicID) {
       await deleteFileFromCloudinary(publicID);
     }
   }
   //final list
-  product.images = [...[retainedImages || [], ...newImageURL]];
+  product.images = [...retainedImages, ...newImageURL];
+  console.log("Images to delete:", imageToDelete);
+console.log("Retained Images:", retainedImages);
+console.log("New Images:", newImageURL);
+console.log("Final Image List:", [...retainedImages, ...newImageURL]);
+
   await product.save();
 
   res
@@ -228,17 +245,18 @@ const deleteProductImage = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Product Not Found With This ID!");
   }
   const imageURL = req.body.imageURL;
-  if (!imageToDelete) {
+  if (!imageURL) {
     throw new ApiError(400, "Image URL is Required For Deletion!");
   }
-  const publicID = extractpublicIDFromUrl(imageToDelete);
+  const publicID = extractpublicIDFromUrl(imageURL);
   if (publicID) {
     await deleteFileFromCloudinary(publicID);
   }
-  Product.images = product.images.filter((url) => url !== imageURL);
+  product.images = product.images.filter((url) => url !== imageURL);
+  await product.save()
   res
     .status(200)
-    .json(new ApiResponse(200, {}, "Product Image Deleted Sucessfully!"));
+    .json(new ApiResponse(200, product, "Product Image Deleted Sucessfully!"));
 });
 const deleteProduct = asyncHandler(async (req, res) => {
   const productID = req.params.id;
@@ -258,8 +276,8 @@ export {
   getAllProducts,
   getProductById,
   updateProduct,
-  deleteProduct,
   uploadProductImage,
   updateProductImage,
-  deleteProductImage
+  deleteProductImage,
+  deleteProduct,
 };

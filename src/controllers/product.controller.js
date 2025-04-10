@@ -63,9 +63,16 @@ const createProduct = asyncHandler(async (req, res) => {
 });
 
 const getAllProducts = asyncHandler(async (req, res) => {
-  const { page = 1, limit = 10, query, sortType, sortBy, AdminID } = req.query;
-  const pageNumber = parseInt(page);
-  const limitNumber = parseInt(limit);
+  const {
+    page = 1,
+    limit = 10,
+    query = "",
+    sortType = "desc",
+    sortBy = "createdAt",
+    AdminID,
+  } = req.query;
+  const pageNumber = Math.max(parseInt(page));
+  const limitNumber = Math.max(parseInt(limit));
   const skip = (pageNumber - 1) * limitNumber;
 
   const filter = {};
@@ -214,7 +221,7 @@ const updateProductImage = asyncHandler(async (req, res) => {
   const imageToDelete = product.images.filter(
     (url) => !(retainedImages || []).includes(url)
   );
-    for (const url of imageToDelete) {
+  for (const url of imageToDelete) {
     const publicID = extractpublicIDFromUrl(url);
     if (publicID) {
       await deleteFileFromCloudinary(publicID);
@@ -223,9 +230,9 @@ const updateProductImage = asyncHandler(async (req, res) => {
   //final list
   product.images = [...retainedImages, ...newImageURL];
   console.log("Images to delete:", imageToDelete);
-console.log("Retained Images:", retainedImages);
-console.log("New Images:", newImageURL);
-console.log("Final Image List:", [...retainedImages, ...newImageURL]);
+  console.log("Retained Images:", retainedImages);
+  console.log("New Images:", newImageURL);
+  console.log("Final Image List:", [...retainedImages, ...newImageURL]);
 
   await product.save();
 
@@ -253,7 +260,7 @@ const deleteProductImage = asyncHandler(async (req, res) => {
     await deleteFileFromCloudinary(publicID);
   }
   product.images = product.images.filter((url) => url !== imageURL);
-  await product.save()
+  await product.save();
   res
     .status(200)
     .json(new ApiResponse(200, product, "Product Image Deleted Sucessfully!"));
@@ -271,6 +278,36 @@ const deleteProduct = asyncHandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, {}, "Product Deleted Successfully!"));
 });
+const filterProductBySearch = asyncHandler(async (req, res) => {
+  const { keyword, category, minPrice, maxPrice } = req.query;
+  const query = { $and: [] };
+  if (keyword) {
+    query.$and.push({
+      $or: [
+        { name: { $regex: keyword, $options: "i" } },
+        { description: { $regex: keyword, $options: "i" } },
+      ],
+    });
+  }
+  if (category) {
+    query.$and.push({ category });
+  }
+
+  if (maxPrice || minPrice) {
+    const priceFilter = {};
+    if (maxPrice) priceFilter.$lte = Number(maxPrice);
+    if (minPrice) priceFilter.$gte = Number(minPrice);
+
+    query.$and.push({ price: priceFilter });
+  }
+  const finalQuery = query.$and.length > 0 ? query : {};
+  const products = await Product.find(finalQuery);
+
+  res
+    .status(200)
+    .json(new ApiResponse(200, products, "Product Fetched Successfully!"));
+});
+
 export {
   createProduct,
   getAllProducts,
@@ -280,4 +317,5 @@ export {
   updateProductImage,
   deleteProductImage,
   deleteProduct,
+  filterProductBySearch,
 };

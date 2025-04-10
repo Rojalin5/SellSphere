@@ -7,10 +7,13 @@ import {
   getAllProducts,
   getProductById,
   updateProduct,
-  deleteProduct,
   uploadProductImage,
   updateProductImage,
   deleteProductImage,
+  deleteProduct,
+  filterProductBySearch,
+  getReleatedProducts,
+  getLatestProducts,
 } from "../controllers/product.controller.js";
 
 const router = Router();
@@ -44,13 +47,20 @@ router
   );
 router
   .route("/update-product_img/:id")
-  .patch(verifyJWT, authorizedRole("Admin"),upload.fields([
-    {name:"productImages",maxCount:5}
-  ]), updateProductImage);
+  .patch(
+    verifyJWT,
+    authorizedRole("Admin"),
+    upload.fields([{ name: "productImages", maxCount: 5 }]),
+    updateProductImage
+  );
 router
   .route("/delete-product_img/:id")
   .delete(verifyJWT, authorizedRole("Admin"), deleteProductImage);
 router
   .route("/delete-product/:id")
   .delete(verifyJWT, authorizedRole("Admin"), deleteProduct);
+
+router.route("/filter-product").get(verifyJWT, filterProductBySearch);
+router.route("/releated-products/:id").get(verifyJWT, getReleatedProducts);
+router.route("/latest-products").get(verifyJWT, getLatestProducts);
 export default router;

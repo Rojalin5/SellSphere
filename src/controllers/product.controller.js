@@ -307,7 +307,33 @@ const filterProductBySearch = asyncHandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, products, "Product Fetched Successfully!"));
 });
+const getReleatedProducts = asyncHandler(async(req,res)=>{
+    const productID = req.params.id;
+    if(!productID){
+        throw new ApiError(400,"ProductID is Required!")
+    }
+    const currentProduct = await Product.findById(productID)
+    if(!currentProduct){
+        throw new ApiError(404,"Product Not Found With This ID!")
+    }
+    const releatedProduct = await Product.find({
+        _id:({$ne:productID}),
+        category:currentProduct.category,
+        }).limit(20)
 
+        res.status(200).json(
+            new ApiResponse(200,releatedProduct,"Releated Products Fetched Successfully!")
+        )
+    })
+
+    const getLatestProducts = asyncHandler(async(req,res)=>{
+        const {limit=20} = req.query
+        const latestProducts = await Product.find().sort({createdAt:-1}).limit(parseInt(limit))
+
+  res.status(200).json(
+    new ApiResponse(200, latestProducts, "Latest Products fetched successfully")
+  );
+});
 export {
   createProduct,
   getAllProducts,
@@ -318,4 +344,6 @@ export {
   deleteProductImage,
   deleteProduct,
   filterProductBySearch,
+  getReleatedProducts,
+  getLatestProducts
 };

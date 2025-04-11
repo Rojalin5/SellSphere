@@ -3,18 +3,20 @@ import { upload } from "../middlewares/multer.middlewares.js";
 import { verifyJWT } from "../middlewares/Authentication.js";
 import { authorizedRole } from "../middlewares/roleAuthentication.js";
 import {
-    createProduct,
-    getAllProducts,
-    getProductById,
-    updateProduct,
-    uploadProductImage,
-    updateProductImage,
-    deleteProductImage,
-    deleteProduct,
-    filterProductBySearch,
-    getProductByCategory,
-    getReleatedProducts,
-    getLatestProducts,
+  createProduct,
+  getAllProducts,
+  getProductById,
+  updateProduct,
+  uploadProductImage,
+  updateProductImage,
+  deleteProductImage,
+  deleteProduct,
+  filterProductBySearch,
+  getProductByCategory,
+  getReleatedProducts,
+  getLatestProducts,
+  batchUploadProduct,
+  batchDeleteProducts,
 } from "../controllers/product.controller.js";
 
 const router = Router();
@@ -62,7 +64,16 @@ router
   .delete(verifyJWT, authorizedRole("Admin"), deleteProduct);
 
 router.route("/filter-product").get(verifyJWT, filterProductBySearch);
-router.route("/products/category/:category").get(verifyJWT,getProductByCategory);
+router
+  .route("/products/category/:category")
+  .get(verifyJWT, getProductByCategory);
 router.route("/releated-products/:id").get(verifyJWT, getReleatedProducts);
 router.route("/latest-products").get(verifyJWT, getLatestProducts);
+router
+  .route("/products/batch-upload")
+  .delete(verifyJWT, authorizedRole("Admin"), batchDeleteProducts);
+router
+  .route("/products/batch-delete")
+  .delete(verifyJWT, authorizedRole("Admin"), batchDeleteProducts);
+
 export default router;

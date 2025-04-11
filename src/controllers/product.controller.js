@@ -357,8 +357,30 @@ const getLatestProducts = asyncHandler(async (req, res) => {
       )
     );
 });
-
-
+const batchUploadProduct = asyncHandler(async(req,res)=>{
+    const products = req.body.products
+    if(!Array.isArray(products) || products.length ===0){
+        throw new ApiError(400,"Please provide an array of products to upload.")
+    }
+try {
+    const insertedProduct = await Product.insertMany(products,{ordered:false})
+    res.status(200).json(
+        new ApiResponse(200,insertedProduct,`${insertedProduct.length} products uploaded successfully`)
+    )
+} catch (error) {
+    throw new ApiError(500,"Something went wrong while uploading products.")
+}
+})
+const batchDeleteProducts = asyncHandler(async(req,res)=>{
+const productIDs = req.body.productIDs
+if(!productIDs || Array.isArray(productIDs) || productIDs.length === 0){
+    throw new ApiError(400, "Please Provide ProductIDs.")
+}
+const deletedProducts = await Product.deleteMany({_id:{$in:productIDs}})
+res.status(200).json(
+    new ApiResponse(200,deletedProducts,`${deletedProducts.deletedCount} Products Deleted Successfully`)
+)
+})
 export {
   createProduct,
   getAllProducts,
@@ -372,4 +394,6 @@ export {
   getProductByCategory,
   getReleatedProducts,
   getLatestProducts,
+  batchUploadProduct,
+  batchDeleteProducts
 };

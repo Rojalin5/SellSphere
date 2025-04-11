@@ -302,21 +302,22 @@ const filterProductBySearch = asyncHandler(async (req, res) => {
   }
   const finalQuery = query.$and.length > 0 ? query : {};
   const products = await Product.find(finalQuery);
-
+const count = await Product.countDocuments(finalQuery)
   res
     .status(200)
-    .json(new ApiResponse(200, products, "Product Fetched Successfully!"));
+    .json(new ApiResponse(200, products, "Product Fetched Successfully!",{"Number of Product":count}));
 });
 const getProductByCategory = asyncHandler(async (req, res) => {
-    const { category } = req.query;
-    if (!category) {
-      throw new ApiError(400, "Category is Required!");
-    }
-    const products = await Product.find({ category }).sort({ createdAt: -1 });
-    res
-      .status(200)
-      .json(new ApiResponse(200, products, "Products fetched successfully!"));
-  });
+  const { category } = req.params;
+  if (!category) {
+    throw new ApiError(400, "Category is Required!");
+  }
+  const products = await Product.find({ category }).sort({ createdAt: -1 });
+  const count = await Product.countDocuments({category})
+  res
+    .status(200)
+    .json(new ApiResponse(200, products, "Products fetched successfully!",{"Number of Product":count}));
+});
 const getReleatedProducts = asyncHandler(async (req, res) => {
   const productID = req.params.id;
   if (!productID) {
@@ -330,7 +331,9 @@ const getReleatedProducts = asyncHandler(async (req, res) => {
     _id: { $ne: productID },
     category: currentProduct.category,
   }).limit(20);
-
+if(releatedProduct.length === 0){
+    throw new ApiError(404,"No Releated Product Found!")
+}
   res
     .status(200)
     .json(
@@ -357,30 +360,51 @@ const getLatestProducts = asyncHandler(async (req, res) => {
       )
     );
 });
-const batchUploadProduct = asyncHandler(async(req,res)=>{
-    const products = req.body.products
-    if(!Array.isArray(products) || products.length ===0){
-        throw new ApiError(400,"Please provide an array of products to upload.")
-    }
-try {
-    const insertedProduct = await Product.insertMany(products,{ordered:false})
-    res.status(200).json(
-        new ApiResponse(200,insertedProduct,`${insertedProduct.length} products uploaded successfully`)
-    )
-} catch (error) {
-    throw new ApiError(500,"Something went wrong while uploading products.")
-}
-})
-const batchDeleteProducts = asyncHandler(async(req,res)=>{
-const productIDs = req.body.productIDs
-if(!productIDs || Array.isArray(productIDs) || productIDs.length === 0){
-    throw new ApiError(400, "Please Provide ProductIDs.")
-}
-const deletedProducts = await Product.deleteMany({_id:{$in:productIDs}})
-res.status(200).json(
-    new ApiResponse(200,deletedProducts,`${deletedProducts.deletedCount} Products Deleted Successfully`)
-)
-})
+const batchUploadProduct = asyncHandler(async (req, res) => {
+  const products = req.body.products;
+  if (!Array.isArray(products) || products.length === 0) {
+    throw new ApiError(400, "Please provide an array of products to upload.");
+  }
+  const adminID = req.user?._id;
+  const productWithOwner = products.map((product) => ({
+    ...product,
+    owner: adminID,
+  }));
+  try {
+    const insertedProduct = await Product.insertMany(productWithOwner, {
+      ordered: false,
+    });
+    res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          insertedProduct,
+          `${insertedProduct.length} products uploaded successfully`
+        )
+      );
+  } catch (error) {
+    throw new ApiError(500, "Something went wrong while uploading products.");
+  }
+});
+const batchDeleteProducts = asyncHandler(async (req, res) => {
+  const productIDs = req.body.productIDs;
+  if (!productIDs || !Array.isArray(productIDs) || productIDs.length === 0) {
+    throw new ApiError(400, "Please Provide ProductIDs.");
+  }
+  const deletedProducts = await Product.deleteMany({
+    _id: { $in: productIDs },
+  });
+  res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        deletedProducts,
+        `${deletedProducts.deletedCount} Products Deleted Successfully`
+      )
+    );
+});
 export {
   createProduct,
   getAllProducts,
@@ -395,5 +419,5 @@ export {
   getReleatedProducts,
   getLatestProducts,
   batchUploadProduct,
-  batchDeleteProducts
+  batchDeleteProducts,
 };

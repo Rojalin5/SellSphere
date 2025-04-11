@@ -65,15 +65,15 @@ router
 
 router.route("/filter-product").get(verifyJWT, filterProductBySearch);
 router
-  .route("/products/category/:category")
+  .route("/category/:category")
   .get(verifyJWT, getProductByCategory);
 router.route("/releated-products/:id").get(verifyJWT, getReleatedProducts);
 router.route("/latest-products").get(verifyJWT, getLatestProducts);
 router
-  .route("/products/batch-upload")
-  .delete(verifyJWT, authorizedRole("Admin"), batchDeleteProducts);
+  .route("/batch-upload")
+  .post(verifyJWT, authorizedRole("Admin"), batchUploadProduct);
 router
-  .route("/products/batch-delete")
+  .route("/batch-delete")
   .delete(verifyJWT, authorizedRole("Admin"), batchDeleteProducts);
 
 export default router;

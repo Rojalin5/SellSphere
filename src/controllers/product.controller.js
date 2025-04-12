@@ -69,7 +69,6 @@ const getAllProducts = asyncHandler(async (req, res) => {
     query = "",
     sortType = "desc",
     sortBy = "createdAt",
-    AdminID,
   } = req.query;
   const pageNumber = Math.max(parseInt(page));
   const limitNumber = Math.max(parseInt(limit));
@@ -80,9 +79,9 @@ const getAllProducts = asyncHandler(async (req, res) => {
   if (query) {
     filter.name = { $regex: query, $options: "i" };
   }
-  if (AdminID) {
-    filter.owner = AdminID;
-  }
+  //authenticated admin's ID
+  filter.owner = req.user._id;
+
   const sortOrder = sortType === "asc" ? 1 : -1;
   const sortOption = { [sortBy]: sortOrder };
 
@@ -302,10 +301,14 @@ const filterProductBySearch = asyncHandler(async (req, res) => {
   }
   const finalQuery = query.$and.length > 0 ? query : {};
   const products = await Product.find(finalQuery);
-const count = await Product.countDocuments(finalQuery)
+  const count = await Product.countDocuments(finalQuery);
   res
     .status(200)
-    .json(new ApiResponse(200, products, "Product Fetched Successfully!",{"Number of Product":count}));
+    .json(
+      new ApiResponse(200, products, "Product Fetched Successfully!", {
+        "Number of Product": count,
+      })
+    );
 });
 const getProductByCategory = asyncHandler(async (req, res) => {
   const { category } = req.params;
@@ -313,10 +316,14 @@ const getProductByCategory = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Category is Required!");
   }
   const products = await Product.find({ category }).sort({ createdAt: -1 });
-  const count = await Product.countDocuments({category})
+  const count = await Product.countDocuments({ category });
   res
     .status(200)
-    .json(new ApiResponse(200, products, "Products fetched successfully!",{"Number of Product":count}));
+    .json(
+      new ApiResponse(200, products, "Products fetched successfully!", {
+        "Number of Product": count,
+      })
+    );
 });
 const getReleatedProducts = asyncHandler(async (req, res) => {
   const productID = req.params.id;
@@ -331,9 +338,9 @@ const getReleatedProducts = asyncHandler(async (req, res) => {
     _id: { $ne: productID },
     category: currentProduct.category,
   }).limit(20);
-if(releatedProduct.length === 0){
-    throw new ApiError(404,"No Releated Product Found!")
-}
+  if (releatedProduct.length === 0) {
+    throw new ApiError(404, "No Releated Product Found!");
+  }
   res
     .status(200)
     .json(

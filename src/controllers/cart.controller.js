@@ -47,7 +47,7 @@ const getCartItems = asyncHandler(async (req, res) => {
   );
 });
 const updateCartItem = asyncHandler(async (req, res) => {
-  const { cartItemID, quantity, size, color } = req.body;
+  const { cartItemID,product,quantity, size, color } = req.body;
   const userID = req.user.id;
   if (!cartItemID) {
     throw new ApiError(400, "Please Provide Cart Item ID");
@@ -69,7 +69,7 @@ const updateCartItem = asyncHandler(async (req, res) => {
   if (quantity !== undefined) cartItem.quantity = quantity;
   if (size !== undefined) cartItem.size = size;
   if (color !== undefined) cartItem.color = color;
-
+if(product !== undefined) cartItem.product = product
   await cartItem.save();
   res
     .status(200)

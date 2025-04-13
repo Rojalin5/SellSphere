@@ -58,5 +58,97 @@ const getUserOrders = asyncHandler(async (req, res) => {
     })
   );
 });
-
-export { createOrder };
+const getOrderById = asyncHandler(async (req, res) => {
+  const userID = req.params.id;
+  const orders = await Order.findById(userID)
+    .populate("user", "name email")
+    .populate("product", "name price quantity");
+  if (!orders) {
+    throw new ApiError(404, "Order Not Found!");
+  }
+  const totalOrders = await Order.countDocuments({ user: userID });
+  res.status(200).json(
+    new ApiResponse(200, orders, "Order Fetched Successfully!", {
+      TotalOrders: totalOrders,
+    })
+  );
+});
+const getAllOrders = asyncHandler(async (req, res) => {
+  const orders = await Order.find()
+    .populate("user", "name email")
+    .populate("product", "name,price,quantity");
+  if (!orders || orders.length === 0) {
+    throw new ApiError(404, "Order Not Found!");
+  }
+  const totalOrders = await Order.countDocuments(orders);
+  res.status(200).json(
+    new ApiResponse(200, orders, "All Orders Fetched Successfully!", {
+      TotalOrders: totalOrders,
+    })
+  );
+});
+const orderStatusUpdate = asyncHandler(async (req, res) => {
+  const status = req.body.status;
+  const orderID = req.params.id;
+  if (!status || typeof status !== "string") {
+    throw new ApiError(400, "Order status is required and must be a string");
+  }
+  let finalStatus = status.trim();
+  finalStatus =
+    finalStatus.charAt(0).toUpperCase() + finalStatus.slice(1).toLowerCase();
+  const allowedStatus = [
+    "Confirmed",
+    "Pending",
+    "Delivered",
+    "Shipped",
+    "Cancelled",
+  ];
+  if (!allowedStatus.includes(finalStatus)) {
+    throw new ApiError(400, "Invalid order status");
+  }
+  const order = await Order.findByIdAndUpdate(
+    orderID,
+    {
+      $set: {
+        status: finalStatus,
+      },
+    },
+    { new: true }
+  );
+  if (!order) {
+    throw new ApiError(404, "Order Not Found!");
+  }
+  res
+    .status(200)
+    .json(new ApiResponse(200, order, "Order Status Updated Successfully!"));
+});
+const cancelOrder = asyncHandler(async(req,res)=>{
+    const userID = req.user.id
+    const orderID = req.params.id
+    const order =await Order.findById(orderID)
+    if(!order){
+        throw new ApiError(404,"Order not found")
+    }
+    if(order.user.toString()!==userID.toString()){
+        throw new ApiError(403,"You are not allowed to cancel this order")
+    }
+    if(!["Pending","Confirmed"].includes(order.status)){
+        throw new ApiError(400,"Only Pending or Confirmed Orders are allowed to Cancel!")
+    }
+    if (order.status === "Cancelled") {
+        throw new ApiError(400, "Order is already Cancelled!");
+      }
+    order.status = "Cancelled"
+    await order.save()
+    res.status(200).json(
+        new ApiResponse(200,order,"Order Cancelled Successfully!")
+    )
+})
+export {
+  createOrder,
+  getUserOrders,
+  getOrderById,
+  getAllOrders,
+  orderStatusUpdate,
+  cancelOrder
+};

@@ -3,6 +3,7 @@ import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { Order } from "../models/order.models.js";
 import { Product } from "../models/product.models.js";
+import { application } from "express";
 
 const createOrder = asyncHandler(async (req, res) => {
   const { product, quantity } = req.body;
@@ -58,9 +59,30 @@ const getUserOrders = asyncHandler(async (req, res) => {
     })
   );
 });
+const getMyOrders = asyncHandler(async (req, res) => {
+  const userID = req.user.id;
+  const orders = await Order.find({ user: userID, isDeleted: false })
+    .populate("user", "name,email")
+    .populate("product", "name price quantity");
+  if (!orders) {
+    throw new ApiError(404, "No orders found for this user.");
+  }
+  const totalOrders = await Order.countDocuments({
+    user: userID,
+    isDeleted: false,
+  });
+  res
+    .status(200)
+    .json(
+      new ApiResponse(200, orders, "User Orders Fetched Successfully!", {
+        totalOrders: totalOrders,
+      })
+    );
+});
 const getOrderById = asyncHandler(async (req, res) => {
-  const userID = req.params.id;
-  const orders = await Order.findById(userID)
+  const orderID = req.params.id;
+  const userID = req.user.id;
+  const orders = await Order.findById(orderID)
     .populate("user", "name email")
     .populate("product", "name price quantity");
   if (!orders) {
@@ -122,33 +144,69 @@ const orderStatusUpdate = asyncHandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, order, "Order Status Updated Successfully!"));
 });
-const cancelOrder = asyncHandler(async(req,res)=>{
-    const userID = req.user.id
+const cancelOrder = asyncHandler(async (req, res) => {
+  const userID = req.user.id;
+  const orderID = req.params.id;
+  const order = await Order.findById(orderID);
+  if (!order) {
+    throw new ApiError(404, "Order not found");
+  }
+  if (order.user.toString() !== userID.toString()) {
+    throw new ApiError(403, "You are not allowed to cancel this order");
+  }
+  if (!["Pending", "Confirmed"].includes(order.status)) {
+    throw new ApiError(
+      400,
+      "Only Pending or Confirmed Orders are allowed to Cancel!"
+    );
+  }
+  if (order.status === "Cancelled") {
+    throw new ApiError(400, "Order is already Cancelled!");
+  }
+  order.status = "Cancelled";
+  await order.save();
+  res
+    .status(200)
+    .json(new ApiResponse(200, order, "Order Cancelled Successfully!"));
+});
+const deleteOrder = asyncHandler(async (req, res) => {
+  const orderID = req.params.id;
+  const order = await Order.findById(orderID);
+  if (!order) {
+    throw new ApiError(404, "Order Not Found With This ID!");
+  }
+  if (order.isDeleted) {
+    throw new ApiError(400, "Order is already deleted!");
+  }
+  order.isDeleted = true;
+  await order.save();
+  res
+    .status(200)
+    .json(new ApiResponse(200, null, "Order Deleted Successfully!"));
+});
+const restoreOrder = asyncHandler(async(req,res)=>{
     const orderID = req.params.id
-    const order =await Order.findById(orderID)
+    const order = await Order.findById(orderID)
     if(!order){
-        throw new ApiError(404,"Order not found")
+        throw new ApiError(404,"Order Not Found!")
     }
-    if(order.user.toString()!==userID.toString()){
-        throw new ApiError(403,"You are not allowed to cancel this order")
+    if(!order.isDeleted){
+        throw new ApiError(400, "Order is not deleted, so it cannot be restored!")
     }
-    if(!["Pending","Confirmed"].includes(order.status)){
-        throw new ApiError(400,"Only Pending or Confirmed Orders are allowed to Cancel!")
-    }
-    if (order.status === "Cancelled") {
-        throw new ApiError(400, "Order is already Cancelled!");
-      }
-    order.status = "Cancelled"
+    order.isDeleted = false
     await order.save()
     res.status(200).json(
-        new ApiResponse(200,order,"Order Cancelled Successfully!")
+        new ApiResponse(200,order,"Order Restored Successfully!")
     )
 })
 export {
   createOrder,
   getUserOrders,
+  getMyOrders,
   getOrderById,
   getAllOrders,
   orderStatusUpdate,
-  cancelOrder
+  cancelOrder,
+  deleteOrder,
+  restoreOrder
 };

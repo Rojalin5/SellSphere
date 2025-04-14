@@ -37,6 +37,10 @@ const orderSchema = new mongoose.Schema(
       ref:"Payement",
       default:null
     },
+    isDeleted:{
+      type:Boolean,
+      default:false
+    }
   },
   { timestamps: true }
 );

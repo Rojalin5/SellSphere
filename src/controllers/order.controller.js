@@ -3,21 +3,23 @@ import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { Order } from "../models/order.models.js";
 import { Product } from "../models/product.models.js";
-import { application } from "express";
-
 const createOrder = asyncHandler(async (req, res) => {
-  const { product, quantity } = req.body;
-  const foundProduct = await Product.findById(product);
+  const { productID, quantity } = req.body;
+  const foundProduct = await Product.findById(productID);
   if (!foundProduct) {
     throw new ApiError(404, "Product Not Found!");
   }
+  const price = foundProduct.price;
+  const totalAmount = quantity * price;
+
   const newOrder = await Order.create({
     user: req.user._id,
-    product,
+    product:productID,
     quantity,
     price: foundProduct.price,
     status: "Pending",
     payment: null,
+    totalAmount
   });
   await newOrder.save();
 

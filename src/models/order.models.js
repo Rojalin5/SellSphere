@@ -45,8 +45,4 @@ const orderSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-orderSchema.pre("save", async function (next) {
-  this.totalAmount = this.quantity * this.price;
-  next();
-});
 export const Order = mongoose.model("Order", orderSchema);

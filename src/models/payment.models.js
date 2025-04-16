@@ -31,7 +31,7 @@ gateway:{
 },
 transactionID:{
     type:String,
-    require:true
+    required:true
 },
 paymentStatus: {
     type: String,

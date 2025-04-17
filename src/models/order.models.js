@@ -40,6 +40,16 @@ const orderSchema = new mongoose.Schema(
     isDeleted:{
       type:Boolean,
       default:false
+    },  paymentResult: {
+      id: { type: String }, // Transaction ID from Stripe
+      status: { type: String }
+    },
+    isPaid: {
+      type: Boolean,
+      default: false,
+    },
+    paidAt: {
+      type: Date,
     }
   },
   { timestamps: true }

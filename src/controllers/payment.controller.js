@@ -161,7 +161,7 @@ const handleStripeWebhook = asyncHandler(async (req, res) => {
   }
 });
 const getPaymentByID = asyncHandler(async (req, res) => {
-  const { paymentID } = req.body;
+  const { paymentID } =req.params;
   if (!paymentID) {
     throw new ApiError(400, "Payment ID is Required!");
   }

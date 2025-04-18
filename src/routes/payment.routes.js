@@ -13,11 +13,11 @@ import {
 const router = express.Router();
 
 router.route("/create-paymentintent").post(verifyJWT, createPaymentIntent);
-router.route("/confrim-payment").post(verifyJWT, confirmPayment);
+router.route("/confirm-payment").post(verifyJWT, confirmPayment);
 router
   .route("/webhook", express.raw({ type: "application/json" }))
   .post(handleStripeWebhook);
-router.route("/get-payment").get(verifyJWT, getPaymentByID);
+router.route("/get-payment/:paymentID").get(verifyJWT, getPaymentByID);
 router.route("/payment-refund").post(verifyJWT, refundPayment);
 router.route("/user/all-payments").get(verifyJWT, getUserPayments);
 router

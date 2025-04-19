@@ -161,7 +161,7 @@ const handleStripeWebhook = asyncHandler(async (req, res) => {
   }
 });
 const getPaymentByID = asyncHandler(async (req, res) => {
-  const { paymentID } =req.params;
+  const { paymentID } = req.params;
   if (!paymentID) {
     throw new ApiError(400, "Payment ID is Required!");
   }
@@ -187,11 +187,11 @@ const refundPayment = asyncHandler(async (req, res) => {
   const refund = await stripe.refunds.create({
     payment_intent: payment.transactionID,
   });
-  payment.paymentStatus = "Refunded";
+    payment.paymentStatus = "Refunded";
   await payment.save();
   res
     .status(200)
-    .json(new ApiResponse(200, refund, "Payment Refunded Successfully."));
+    .json(new ApiResponse(200, {}, "Payment Refunded Successfully."));
 });
 const getUserPayments = asyncHandler(async (req, res) => {
   const payments = await Payment.find({ user: req.user.id });

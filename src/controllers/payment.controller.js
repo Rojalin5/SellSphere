@@ -95,13 +95,8 @@ const handleStripeWebhook = asyncHandler(async (req, res) => {
       process.env.STRIPE_WEBHOOK_SECRET
     );
   } catch (error) {
-    console.error(
-      "Stripe webhook signature verification failed:",
-      error.message
-    );
-    return res
-      .status(400)
-      .json(new ApiResponse(400, {}, "Webhook signature verification failed."));
+    console.error("Stripe webhook signature verification failed:", error.message);
+    return res.status(400).json(new ApiResponse(400, {}, "Webhook signature verification failed."));
   }
 
   switch (event.type) {
@@ -109,57 +104,55 @@ const handleStripeWebhook = asyncHandler(async (req, res) => {
       const paymentIntent = event.data.object;
       const { orderID } = paymentIntent?.metadata;
       if (!orderID) {
-        throw new ApiError(400, "Missing Metadata:: OrderID");
+        return res.status(400).json(new ApiResponse(400, {}, "Missing Metadata:: OrderID"));
       }
-      const existingPayment = await Payment.findById({ order: orderID });
-      if (!existingPayment) {
-        const payment = await Payment.create({
-          order: orderID,
-          user: req.user.id,
-          amount: paymentIntent.amount / 100,
-          currency: paymentIntent.currency,
-          paymentMethod: paymentIntent.payment_method_types?.[0] || "Card",
-          gateway: "Stripe",
+
+      // Check if the payment already exists
+      const existingPayment = await Payment.findOne({ order: orderID });
+      if (existingPayment) {
+        return res.status(400).json(new ApiResponse(400, {}, "Payment already exists for this order."));
+      }
+
+      // Create payment record
+      const payment = await Payment.create({
+        order: orderID,
+        user: req.user.id,
+        amount: paymentIntent.amount / 100, // Convert cents to currency unit
+        currency: paymentIntent.currency,
+        paymentMethod: paymentIntent.payment_method_types?.[0] || "Card",
+        gateway: "Stripe",
+        transactionID: paymentIntent.id,
+        paymentStatus: "Success",
+        paymentResponse: paymentIntent,
+      });
+
+      // Update order status
+      await Order.findByIdAndUpdate(orderID, {
+        payment:"success",
+        isPaid: true,
+        paidAt: new Date(),
+        paymentResult: {
           transactionID: paymentIntent.id,
-          paymentStatus: "Success",
-          paymentResponse: paymentIntent,
-        });
-        await Order.findByIdAndUpdate(orderID, {
-          isPaid: true,
-          paidAt: new Date(),
-          paymentResult: {
-            transactionID: paymentIntent.id,
-            status: "Success",
-          },
-        });
-        res
-          .status(200)
-          .json(
-            new ApiResponse(200, payment, "Payment recorded and order updated.")
-          );
-      } else {
-        new ApiResponse(400, {}, "Payment Already Exists.");
-      }
-      break;
+          status: "Success",
+        },
+      });
+
+      return res.status(200).json(new ApiResponse(200, payment, "Payment recorded and order updated."));
 
     case "payment_intent.payment_failed":
-      res.status(400).json(new ApiResponse(400, {}, "Payment Failed"));
-      break;
+      return res.status(400).json(new ApiResponse(400, {}, "Payment Failed"));
 
     case "payment_intent.requires_action":
-      res
-        .status(200)
-        .json(new ApiResponse(200, {}, "Payment requires further action."));
-      break;
+      return res.status(200).json(new ApiResponse(200, {}, "Payment requires further action."));
 
     case "payment_intent.canceled":
-      res.status(200).json(new ApiResponse(200, {}, "Payment was canceled."));
-      break;
+      return res.status(200).json(new ApiResponse(200, {}, "Payment was canceled."));
 
     default:
-      res.status(200).json(new ApiResponse(200, {}, "Unhandled event."));
+      return res.status(200).json(new ApiResponse(200, {}, "Unhandled event."));
   }
 });
+
 const getPaymentByID = asyncHandler(async (req, res) => {
   const { paymentID } = req.params;
   if (!paymentID) {

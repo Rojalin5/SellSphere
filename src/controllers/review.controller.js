@@ -1,7 +1,6 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
-import { Product } from "../models/product.models.js";
 import { Review } from "../models/review.models.js";
 
 const createReview = asyncHandler(async (req, res) => {
@@ -69,7 +68,7 @@ const getAllReviews = asyncHandler(async (req, res) => {
 });
 const updateReview = asyncHandler(async (req, res) => {
   const { rating, comment } = req.body;
-  const reviewID = req.params.id;
+  const {reviewID} = req.params;
   if (!rating && !comment) {
     throw new ApiError(400, "Atleast One Field Is Required To Update Review.");
   }
@@ -88,7 +87,7 @@ const updateReview = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, review, "Review Updated Successfully."));
 });
 const deleteReview = asyncHandler(async (req, res) => {
-  const reviewID = req.params.id;
+  const {reviewID} = req.params;
   if (!reviewID) {
     throw new ApiError(400, "Review ID Missing in Query.");
   }

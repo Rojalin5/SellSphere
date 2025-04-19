@@ -32,11 +32,6 @@ const orderSchema = new mongoose.Schema(
       default: "Pending",
       required: true,
     },
-    payment:{
-      type:mongoose.Schema.Types.ObjectId,
-      ref:"Payement",
-      default:null
-    },
     isDeleted:{
       type:Boolean,
       default:false

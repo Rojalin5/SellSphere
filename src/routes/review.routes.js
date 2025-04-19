@@ -19,8 +19,9 @@ router
   .route("/get-all-reviews")
   .get(verifyJWT, authorizedRole("Admin"), getAllReviews);
 router.route("/update-review/:reviewID").patch(verifyJWT, updateReview);
+router.route("/delete-review/:reviewID").delete(verifyJWT, deleteReview);
 router
-  .route("/delete-review/:reviewID")
+  .route("/delete-any-review/:reviewID")
   .delete(verifyJWT, authorizedRole("Admin"), deleteReview);
 
 export default router;

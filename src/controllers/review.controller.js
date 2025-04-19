@@ -68,7 +68,7 @@ const getAllReviews = asyncHandler(async (req, res) => {
 });
 const updateReview = asyncHandler(async (req, res) => {
   const { rating, comment } = req.body;
-  const {reviewID} = req.params;
+  const { reviewID } = req.params;
   if (!rating && !comment) {
     throw new ApiError(400, "Atleast One Field Is Required To Update Review.");
   }
@@ -87,7 +87,24 @@ const updateReview = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, review, "Review Updated Successfully."));
 });
 const deleteReview = asyncHandler(async (req, res) => {
-  const {reviewID} = req.params;
+  const { reviewID } = req.params;
+  const userID = req.user.id;
+  if (!reviewID) {
+    throw new ApiError(400, "Review ID Missing in Query.");
+  }
+  const review = await Review.findByIdAndDelete({
+    _id: reviewID,
+    user: userID,
+  });
+  if (!review) {
+    throw new ApiError(404, "Review Not Found With This ID.");
+  }
+  res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Review Deleted Successfully."));
+});
+const deleteAnyReview = asyncHandler(async (req, res) => {
+  const { reviewID } = req.params;
   if (!reviewID) {
     throw new ApiError(400, "Review ID Missing in Query.");
   }
@@ -106,4 +123,5 @@ export {
   getAllReviews,
   updateReview,
   deleteReview,
+  deleteAnyReview,
 };

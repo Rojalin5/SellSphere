@@ -24,6 +24,7 @@ import orderRouter from "./routes/order.route.js";
 import paymentRouter from "./routes/payment.routes.js";
 import { handleStripeWebhook } from "./controllers/payment.controller.js";
 import reviewRouter from "./routes/review.routes.js";
+import notificationRouter from "./routes/notification.routes.js";
 
 //route declaration
 app.use("/api/v1/users", userRouter);
@@ -32,6 +33,7 @@ app.use("/api/v1/carts", cartRouter);
 app.use("/api/v1/orders", orderRouter);
 app.use("/api/v1/payments", paymentRouter);
 app.use("/api/v1/reviews", reviewRouter);
+app.use("/api/v1/notifications", notificationRouter);
 
 //Global Error Handler
 app.use((err, req, res, next) => {

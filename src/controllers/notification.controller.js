@@ -76,11 +76,14 @@ const markAsRead = asyncHandler(async (req, res) => {
 });
 const deleteNotification = asyncHandler(async (req, res) => {
   const { notificationID } = req.params;
-  const userID = req.user.id
+  const userID = req.user.id;
   if (!notificationID) {
     throw new ApiError(400, "Notification ID Missing In Query.");
   }
-  const notification = await Notification.findByIdAndDelete({_id:notificationID,user:userID});
+  const notification = await Notification.findByIdAndDelete({
+    _id: notificationID,
+    user: userID,
+  });
   if (!notification) {
     throw new ApiError(404, "Notification Not Found With THis ID.");
   }
@@ -88,18 +91,25 @@ const deleteNotification = asyncHandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, {}, "Notification Deleted Successfully."));
 });
-const deleteAnyNotification = asyncHandler(async(req,res)=>{
-    const { notificationID } = req.params;
-    if (!notificationID) {
-      throw new ApiError(400, "Notification ID Missing In Query.");
-    }
-    const notification = await Notification.findByIdAndDelete(notificationID);
-    if (!notification) {
-      throw new ApiError(404, "Notification Not Found With THis ID.");
-    }
-    res
-      .status(200)
-      .json(new ApiResponse(200, {}, "Notification Deleted Successfully."));
-})
+const deleteAnyNotification = asyncHandler(async (req, res) => {
+  const { notificationID } = req.params;
+  if (!notificationID) {
+    throw new ApiError(400, "Notification ID Missing In Query.");
+  }
+  const notification = await Notification.findByIdAndDelete(notificationID);
+  if (!notification) {
+    throw new ApiError(404, "Notification Not Found With THis ID.");
+  }
+  res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Notification Deleted Successfully."));
+});
 
-export{createNotification,getUserNotifications,getAllNotifications,markAsRead,deleteNotification,deleteAnyNotification}
+export {
+  createNotification,
+  getUserNotifications,
+  getAllNotifications,
+  markAsRead,
+  deleteNotification,
+  deleteAnyNotification,
+};

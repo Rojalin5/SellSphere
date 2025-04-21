@@ -85,7 +85,7 @@ const deleteNotification = asyncHandler(async (req, res) => {
     user: userID,
   });
   if (!notification) {
-    throw new ApiError(404, "Notification Not Found With THis ID.");
+    throw new ApiError(404, "Notification Not Found With This ID.");
   }
   res
     .status(200)

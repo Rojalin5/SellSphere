@@ -6,8 +6,8 @@ import { Notification } from "../models/notification.models.js";
 const createNotification = asyncHandler(async (req, res) => {
   const { user, message, type } = req.body;
   if (!user || !message || !type) {
-    throw new ApiError(400, "Field Missing: All Fiels Are Required.");
-  }
+    throw new ApiError(400, "Field Missing: All Fields Are Required.");
+}
   const notification = await Notification.create({
     user,
     message,
